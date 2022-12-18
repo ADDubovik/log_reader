@@ -144,6 +144,17 @@ public:
         _tail = node;
     }
 
+    template<typename Fn_t>
+    void visit_all(const Fn_t& fn)
+    {
+        Node* curr = _head;
+        while (curr)
+        {
+            fn(curr->t);
+            curr = curr->next;
+        }
+    }
+
 private:
     struct Node
     {
@@ -169,18 +180,62 @@ public:
     void process(
         char const* const chunk,
         const DWORD size,
-        const size_t offset);
+        const ULONG64 offset);
+
+    void finish();
 
 private:
-    size_t _length;
+    struct Line
+    {
+        ULONG64 line_start = 0;
+        ULONG64 line_past_the_end = 0;
+    };
+
+private:
+    const size_t _length;
     Memory _pattern;
+
+    Line _current;
+    List<Line> _lines;
 };
 
 void Searcher::process(
     char const* const chunk,
     const DWORD size,
-    const size_t offset)
+    const ULONG64 offset)
 {
+    for (DWORD i = 0; i < size; ++i)
+    {
+        switch (chunk[i])
+        {
+        case '\x0d':
+        {
+            break;
+        }
+        case '\x0a':
+        {
+            _current.line_past_the_end = offset + i + 1;
+
+            _lines.insert_back(_current);
+
+            _current.line_start = _current.line_past_the_end;
+
+            break;
+        }
+        default:
+        {
+
+        }
+        }
+    }
+}
+
+void Searcher::finish()
+{
+    _lines.visit_all(
+        [](const Line& line) {
+        }
+    );
 }
 
 int main(int argc, char* argv[])
@@ -223,7 +278,10 @@ int main(int argc, char* argv[])
             NULL         // [in, out, optional] LPOVERLAPPED lpOverlapped
         );
 
-        offset += bytes_read;
         searcher.process(buf, bytes_read, offset);
+
+        offset += bytes_read;
     } while (read_result && buf_size == bytes_read);
+
+    searcher.finish();
 }
