@@ -8,13 +8,19 @@ constexpr size_t buf_size = 1024;
 class HandleGuarded
 {
 public:
-    explicit HandleGuarded(HANDLE handle)
+    explicit HandleGuarded(
+        HANDLE handle,
+        bool need_to_close = true)
         : _handle(handle)
+        , _need_to_close(need_to_close)
     {}
 
     ~HandleGuarded()
     {
-        CloseHandle(_handle);
+        if (_need_to_close)
+        {
+            CloseHandle(_handle);
+        }
     }
 
     operator bool() const { return _handle != NULL && _handle != INVALID_HANDLE_VALUE; }
@@ -22,13 +28,14 @@ public:
 
 private:
     const HANDLE _handle;
+    const bool _need_to_close;
 };
 
 class Console : public HandleGuarded
 {
 public:
     Console()
-        : HandleGuarded(GetStdHandle(STD_OUTPUT_HANDLE))
+        : HandleGuarded(GetStdHandle(STD_OUTPUT_HANDLE), false)
     {}
 
     template<typename ... Args_t>
@@ -105,6 +112,50 @@ private:
     void* _pointer;
 };
 
+template<typename T>
+class List
+{
+public:
+    List()
+        : _head(nullptr)
+        , _tail(nullptr)
+    {}
+    ~List()
+    {
+        while (_head)
+        {
+            const Node* to_delete = _head;
+            _head = _head->next;
+            delete to_delete;
+        }
+    }
+
+    void insert_back(const T& t)
+    {
+        Node* const node = new Node{ t, nullptr };
+        if (!_head)
+        {
+            _head = node;
+        }
+        if (_tail)
+        {
+            _tail->next = node;
+        }
+        _tail = node;
+    }
+
+private:
+    struct Node
+    {
+        T t;
+        Node* next = nullptr;
+    };
+
+private:
+    Node* _head;
+    Node* _tail;
+};
+
 class Searcher
 {
 public:
@@ -116,8 +167,9 @@ public:
     }
 
     void process(
-        char const* chunk,
-        const DWORD size);
+        char const* const chunk,
+        const DWORD size,
+        const size_t offset);
 
 private:
     size_t _length;
@@ -125,8 +177,9 @@ private:
 };
 
 void Searcher::process(
-    char const* chunk,
-    const DWORD size)
+    char const* const chunk,
+    const DWORD size,
+    const size_t offset)
 {
 }
 
@@ -156,6 +209,7 @@ int main(int argc, char* argv[])
     DWORD bytes_read;
     char buf[buf_size];
     BOOL read_result;
+    size_t offset = 0;
     do
     {
         bytes_read = 0;
@@ -169,6 +223,7 @@ int main(int argc, char* argv[])
             NULL         // [in, out, optional] LPOVERLAPPED lpOverlapped
         );
 
-        searcher.process(buf, bytes_read);
+        offset += bytes_read;
+        searcher.process(buf, bytes_read, offset);
     } while (read_result && buf_size == bytes_read);
 }
