@@ -3,6 +3,8 @@
 const int invalid_args_exit_code = 1;
 const int cannot_open_file_exit_code = 2;
 
+constexpr size_t buf_size = 1024;
+
 class HandleGuarded
 {
 public:
@@ -102,4 +104,21 @@ int main(int argc, char* argv[])
 
         exit(cannot_open_file_exit_code);
     }
+
+    DWORD bytes_read;
+    char buf[buf_size];
+    BOOL read_result;
+    do
+    {
+        bytes_read = 0;
+        memset(&buf, 0, buf_size);
+
+        read_result = ReadFile(
+            file,        // [in]                HANDLE       hFile,
+            &buf,        // [out]               LPVOID       lpBuffer,
+            buf_size,    // [in]                DWORD        nNumberOfBytesToRead,
+            &bytes_read, // [out, optional]     LPDWORD      lpNumberOfBytesRead,
+            NULL         // [in, out, optional] LPOVERLAPPED lpOverlapped
+        );
+    } while (read_result && buf_size == bytes_read);
 }
