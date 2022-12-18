@@ -20,6 +20,17 @@ public:
     operator bool() const { return _handle != NULL && _handle != INVALID_HANDLE_VALUE; }
     operator HANDLE() const { return _handle; }
 
+private:
+    const HANDLE _handle;
+};
+
+class Console : public HandleGuarded
+{
+public:
+    Console()
+        : HandleGuarded(GetStdHandle(STD_OUTPUT_HANDLE))
+    {}
+
     template<typename ... Args_t>
     bool print_multi(Args_t ...);
 
@@ -45,7 +56,7 @@ public:
         const auto length = static_cast<DWORD>(strlen(message));
         DWORD written = 0;
         WriteConsoleA(
-            _handle,
+            *this,
             message,
             length,
             &written,
@@ -54,17 +65,6 @@ public:
 
         return length == written;
     }
-
-private:
-    const HANDLE _handle;
-};
-
-class Console : public HandleGuarded
-{
-public:
-    Console()
-        : HandleGuarded(GetStdHandle(STD_OUTPUT_HANDLE))
-    {}
 };
 
 class FileToBeRead : public HandleGuarded
@@ -83,6 +83,52 @@ public:
         ))
     {};
 };
+
+class Memory
+{
+public:
+    explicit Memory(size_t size)
+        : _pointer(malloc(size))
+    {}
+
+    ~Memory()
+    {
+        free(_pointer);
+    }
+
+    operator void* () const
+    {
+        return _pointer;
+    }
+
+private:
+    void* _pointer;
+};
+
+class Searcher
+{
+public:
+    explicit Searcher(char const* pattern)
+        : _length(static_cast<DWORD>(strlen(pattern)))
+        , _pattern(_length)
+    {
+        memcpy(_pattern, pattern, _length);
+    }
+
+    void process(
+        char const* chunk,
+        const DWORD size);
+
+private:
+    size_t _length;
+    Memory _pattern;
+};
+
+void Searcher::process(
+    char const* chunk,
+    const DWORD size)
+{
+}
 
 int main(int argc, char* argv[])
 {
@@ -105,6 +151,8 @@ int main(int argc, char* argv[])
         exit(cannot_open_file_exit_code);
     }
 
+    const auto pattern = argv[2];
+    Searcher searcher(pattern);
     DWORD bytes_read;
     char buf[buf_size];
     BOOL read_result;
@@ -120,5 +168,7 @@ int main(int argc, char* argv[])
             &bytes_read, // [out, optional]     LPDWORD      lpNumberOfBytesRead,
             NULL         // [in, out, optional] LPOVERLAPPED lpOverlapped
         );
+
+        searcher.process(buf, bytes_read);
     } while (read_result && buf_size == bytes_read);
 }
