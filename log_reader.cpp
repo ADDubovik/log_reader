@@ -4,7 +4,7 @@
 #include "memory.h"
 #include "searcher.h"
 
-#include "c_log_reader.h"
+#include "log_reader.h"
 
 namespace
 {

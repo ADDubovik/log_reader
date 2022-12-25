@@ -2,7 +2,7 @@
 
 #include "handle_guarded.h"
 
-#include "c_log_reader.h"
+#include "log_reader.h"
 
 namespace
 {

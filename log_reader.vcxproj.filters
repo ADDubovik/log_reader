@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="c_log_reader.cpp">
+    <ClCompile Include="log_reader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="handle_guarded.cpp">
@@ -32,7 +32,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="c_log_reader.h">
+    <ClInclude Include="log_reader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="handle_guarded.h">
