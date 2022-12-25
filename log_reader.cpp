@@ -1,6 +1,7 @@
 #include <Windows.h>
 
 #include "handle_guarded.h"
+#include "memory.h"
 
 const int invalid_args_exit_code = 1;
 const int cannot_open_file_exit_code = 2;
@@ -65,32 +66,6 @@ public:
                 NULL                   // [in, optional] HANDLE                hTemplateFile
         ))
     {};
-};
-
-class Memory
-{
-public:
-    explicit Memory(size_t size)
-        : _pointer(malloc(size))
-    {}
-
-    ~Memory()
-    {
-        free(_pointer);
-    }
-
-    operator void* () const
-    {
-        return _pointer;
-    }
-
-    void* get() const
-    {
-        return _pointer;
-    }
-
-private:
-    void* _pointer;
 };
 
 template<typename T>
