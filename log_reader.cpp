@@ -1,41 +1,17 @@
 #include <Windows.h>
 
+#include "handle_guarded.h"
+
 const int invalid_args_exit_code = 1;
 const int cannot_open_file_exit_code = 2;
 
 constexpr size_t buf_size = 1024;
 
-class HandleGuarded
-{
-public:
-    explicit HandleGuarded(
-        HANDLE handle,
-        bool need_to_close = true)
-        : _handle(handle)
-        , _need_to_close(need_to_close)
-    {}
-
-    ~HandleGuarded()
-    {
-        if (_need_to_close)
-        {
-            CloseHandle(_handle);
-        }
-    }
-
-    operator bool() const { return _handle != NULL && _handle != INVALID_HANDLE_VALUE; }
-    operator HANDLE() const { return _handle; }
-
-private:
-    const HANDLE _handle;
-    const bool _need_to_close;
-};
-
 class Console : public HandleGuarded
 {
 public:
     Console()
-        : HandleGuarded(GetStdHandle(STD_OUTPUT_HANDLE), false)
+        : HandleGuarded(GetStdHandle(STD_OUTPUT_HANDLE))
     {}
 
     template<typename ... Args_t>
@@ -108,6 +84,11 @@ public:
         return _pointer;
     }
 
+    void* get() const
+    {
+        return _pointer;
+    }
+
 private:
     void* _pointer;
 };
@@ -173,6 +154,9 @@ public:
     explicit Searcher(char const* pattern)
         : _length(static_cast<DWORD>(strlen(pattern)))
         , _pattern(_length)
+        , _pattern_current_index(0)
+        , _pattern_roll_index(0)
+        , _is_line_suitable(false)
     {
         memcpy(_pattern, pattern, _length);
     }
@@ -197,6 +181,10 @@ private:
 
     Line _current;
     List<Line> _lines;
+    ULONG32 _pattern_current_index;
+    bool _has_roll;
+    ULONG32 _pattern_roll_index;
+    bool _is_line_suitable;
 };
 
 void Searcher::process(
@@ -204,9 +192,23 @@ void Searcher::process(
     const DWORD size,
     const ULONG64 offset)
 {
+    char const* const pattern = reinterpret_cast<char const*>(_pattern.get());
+
+    const auto skip_asterisks = [this, pattern]() {
+        while ('*' == pattern[_pattern_current_index])
+        {
+            _has_roll = true;
+            ++_pattern_current_index;
+            _pattern_roll_index = _pattern_current_index;
+        }
+    };
+
+    skip_asterisks();
+
     for (DWORD i = 0; i < size; ++i)
     {
-        switch (chunk[i])
+        const char ch = chunk[i];
+        switch (ch)
         {
         case '\x0d':
         {
@@ -220,11 +222,21 @@ void Searcher::process(
 
             _current.line_start = _current.line_past_the_end;
 
+            _pattern_current_index = 0;
+
+            skip_asterisks();
+
             break;
         }
         default:
         {
+            if (pattern[_pattern_current_index])
+            {
+                if (ch == pattern[_pattern_current_index])
+                {
 
+                }
+            }
         }
         }
     }

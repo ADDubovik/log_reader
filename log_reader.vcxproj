@@ -127,7 +127,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="c_log_reader.cpp" />
+    <ClCompile Include="handle_guarded.cpp" />
     <ClCompile Include="log_reader.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="c_log_reader.h" />
+    <ClInclude Include="handle_guarded.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
