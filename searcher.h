@@ -31,12 +31,20 @@ public:
     operator bool() const;
 
 private:
+    enum class LineStatus
+    {
+        unknown,
+        suitable,
+        non_suitable,
+    };
+
+private:
     size_t _length;
     Memory _pattern;
 
     Line _line;
-    ULONG32 _pattern_current_index;
+    size_t _pattern_current_index;
     bool _has_roll;
-    ULONG32 _pattern_roll_index;
-    bool _is_line_suitable;
+    size_t _pattern_roll_index;
+    LineStatus _line_status;
 };
