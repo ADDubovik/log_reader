@@ -5,7 +5,7 @@
 class HandleGuarded
 {
 public:
-    explicit HandleGuarded(HANDLE handle);
+    explicit HandleGuarded(HANDLE handle= NULL);
 
     ~HandleGuarded();
 

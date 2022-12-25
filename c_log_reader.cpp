@@ -2,8 +2,14 @@
 
 #include "handle_guarded.h"
 #include "memory.h"
+#include "searcher.h"
 
 #include "c_log_reader.h"
+
+namespace
+{
+    constexpr size_t buf_size = 1024;
+}
 
 class CLogReader::Impl
 {
@@ -19,20 +25,26 @@ public:
     bool GetLineNext(char* buf, const int bufsize);
 
 private:
-    HandleGuarded _handle;
-    Memory _filter;
+    bool ReadBuffer();
+
+private:
+    HandleGuarded _file;
+    Searcher _searcher;
+
+    size_t _buf_search_index = 0;
+    size_t _buf_past_the_end_index = 0;
+    size_t _buf_position_in_file = 0;
+    size_t _read_from_file_total = 0;
+    char _buf[buf_size];
 };
 
-CLogReader::Impl::Impl()
-    : _handle(NULL)
-{
-}
+CLogReader::Impl::Impl() = default;
 
 CLogReader::Impl::~Impl() = default;
 
 bool CLogReader::Impl::Open(const char* filename)
 {
-    _handle = HandleGuarded(
+    _file = HandleGuarded(
         CreateFileA(
             filename,              // [in]           LPCSTR                lpFileName, 
             GENERIC_READ,          // [in]           DWORD                 dwDesiredAccess,
@@ -44,33 +56,84 @@ bool CLogReader::Impl::Open(const char* filename)
         )
     );
 
-    return _handle;
+    return _file;
 }
 
 void CLogReader::Impl::Close()
 {
-    _handle.Close();
+    _file.Close();
 }
 
 bool CLogReader::Impl::SetFilter(const char* filter)
 {
-    const auto str_length = strlen(filter);
+    _searcher = Searcher(filter);
 
-    _filter = Memory(str_length + 1);
-
-    if (!_filter)
-    {
-        return false;
-    }
-
-    memcpy(_filter, filter, str_length + 1);
-
-    return true;
+    return _searcher;
 }
 
 bool CLogReader::Impl::GetLineNext(char* buf, const int bufsize)
 {
+    if (!_searcher || !_file)
+    {
+        return false;
+    }
+
+    do
+    {
+        if (_buf_search_index == _buf_past_the_end_index)
+        {
+            if (!ReadBuffer())
+            {
+                return false;
+            }
+        }
+
+        Searcher::Line line;
+        if (_searcher.process(
+            &_buf[0],
+            _buf_search_index,
+            _buf_past_the_end_index,
+            _buf_position_in_file,
+            line))
+        {
+            _buf_search_index = line.past_the_end;
+            // TODO
+            return true;
+        }
+        else
+        {
+            _buf_search_index = 0;
+        }
+    } while (true);
+
     return false;
+}
+
+bool CLogReader::Impl::ReadBuffer()
+{
+    DWORD bytes_read = 0;
+    BOOL read_result;
+
+    memset(&_buf, 0, buf_size);
+
+    read_result = ReadFile(
+        _file,       // [in]                HANDLE       hFile,
+        &_buf,       // [out]               LPVOID       lpBuffer,
+        buf_size,    // [in]                DWORD        nNumberOfBytesToRead,
+        &bytes_read, // [out, optional]     LPDWORD      lpNumberOfBytesRead,
+        NULL         // [in, out, optional] LPOVERLAPPED lpOverlapped
+    );
+
+    if (!read_result || 0 == bytes_read)
+    {
+        return false;
+    }
+
+    _buf_position_in_file = _read_from_file_total;
+    _buf_past_the_end_index = bytes_read;
+    _read_from_file_total += bytes_read;
+
+    return true;
 }
 
 CLogReader::CLogReader()

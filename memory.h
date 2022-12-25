@@ -7,6 +7,12 @@ public:
 
     ~Memory();
 
+    Memory(Memory&&) = default;
+    Memory(const Memory&) = delete;
+
+    Memory& operator=(Memory&&) = default;
+    Memory& operator=(const Memory&) = delete;
+
     operator void* () const
     {
         return _pointer;

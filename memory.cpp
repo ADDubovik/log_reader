@@ -8,7 +8,8 @@ Memory::Memory(size_t size)
         ? malloc(size)
         : nullptr
     )
-{}
+{
+}
 
 Memory::~Memory()
 {
