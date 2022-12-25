@@ -78,42 +78,40 @@ bool Searcher::process(
 
         if ('\x0d' == ch)
         {
-            // skip
+            continue;
         }
-        else
+
+        if (!_rejected)
         {
-            if (!_rejected)
+            const auto& syntax_element = syntax_elements[_syntax_index];
+
+            if (syntax_element.ch == ch || syntax_element.ch == '?')
             {
-                const auto& syntax_element = syntax_elements[_syntax_index];
-
-                if (syntax_element.ch == ch || syntax_element.ch == '?')
+                if (syntax_element.apply_if_match)
                 {
-                    if (syntax_element.apply_if_match)
-                    {
-                        line.start_from = _line_start;
-                        line.past_the_end = chunk_position_in_file + i + 1;
-                        _line_start = line.past_the_end;
+                    line.start_from = _line_start;
+                    line.past_the_end = chunk_position_in_file + i + 1;
+                    _line_start = line.past_the_end;
 
-                        _syntax_index = 0;
-                        _rejected = false;
+                    _syntax_index = 0;
+                    _rejected = false;
 
-                        return true;
-                    }
-                    else
-                    {
-                        ++_syntax_index;
-                    }
+                    return true;
                 }
                 else
                 {
-                    if (syntax_element.reject_if_not_match)
-                    {
-                        _rejected = true;
-                    }
-                    else
-                    {
-                        _syntax_index = syntax_element.index_roll_if_not_match;
-                    }
+                    ++_syntax_index;
+                }
+            }
+            else
+            {
+                if (syntax_element.reject_if_not_match)
+                {
+                    _rejected = true;
+                }
+                else
+                {
+                    _syntax_index = syntax_element.index_roll_if_not_match;
                 }
             }
         }
