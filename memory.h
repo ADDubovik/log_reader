@@ -7,10 +7,22 @@ public:
 
     ~Memory();
 
-    Memory(Memory&&) = default;
+    Memory(Memory&& oth) noexcept
+    {
+        auto temp = _pointer;
+        _pointer = oth._pointer;
+        oth._pointer = temp;
+    }
     Memory(const Memory&) = delete;
 
-    Memory& operator=(Memory&&) = default;
+    Memory& operator=(Memory&& oth) noexcept
+    {
+        auto temp = _pointer;
+        _pointer = oth._pointer;
+        oth._pointer = temp;
+
+        return *this;
+    }
     Memory& operator=(const Memory&) = delete;
 
     operator void* () const

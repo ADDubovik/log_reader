@@ -2,7 +2,10 @@
 
 Searcher::Searcher(char const* pattern)
     : _length(strlen(pattern))
-    , _pattern(_length)
+    , _pattern(
+        _length
+        ? _length + 1
+        : 0)
     , _pattern_current_index(0)
     , _has_roll(false)
     , _pattern_roll_index(0)
@@ -10,7 +13,7 @@ Searcher::Searcher(char const* pattern)
 {
     if (_pattern)
     {
-        memcpy(_pattern, pattern, _length);
+        memcpy(_pattern, pattern, _length + 1);
     }
 }
 
