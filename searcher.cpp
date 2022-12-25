@@ -1,16 +1,60 @@
 #include "searcher.h"
 
-Searcher::Searcher(char const* pattern)
-    : _length(strlen(pattern))
-    , _pattern(_length + 1)
-    , _pattern_current_index(0)
-    , _has_roll(false)
-    , _pattern_roll_index(0)
-    , _line_status(LineStatus::unknown)
+namespace
 {
-    if (_pattern)
+    size_t CountNonAsterisks(char const* pattern)
     {
-        memcpy(_pattern, pattern, _length + 1);
+        size_t result = 0;
+
+        for (char const* pointer = pattern; *pointer; ++pointer)
+        {
+            if (*pointer != '*')
+            {
+                ++result;
+            }
+        }
+
+        return result;
+    }
+}
+
+Searcher::Searcher(char const* pattern)
+    : _syntax(sizeof(SyntaxElement) * (CountNonAsterisks(pattern) + 1))
+    , _syntax_index(0)
+    , _line_start(0)
+    , _rejected(false)
+{
+    if (_syntax)
+    {
+        auto syntax_elements = reinterpret_cast<SyntaxElement*>(_syntax.get());
+
+        size_t inserted = 0;
+        size_t index_roll_if_not_match = 0;
+        bool has_roll = false;
+
+        for (char const* pointer = pattern; *pointer; ++pointer)
+        {
+            const char ch = *pointer;
+            if ('*' == ch)
+            {
+                has_roll = true;
+                index_roll_if_not_match = inserted;
+            }
+            else
+            {
+                syntax_elements[inserted].ch = ch;
+                syntax_elements[inserted].index_roll_if_not_match = index_roll_if_not_match;
+                syntax_elements[inserted].reject_if_not_match = !has_roll;
+                syntax_elements[inserted].apply_if_match = false;
+                
+                ++inserted;
+            }
+        }
+
+        syntax_elements[inserted].ch = '\x0a';
+        syntax_elements[inserted].index_roll_if_not_match = index_roll_if_not_match;
+        syntax_elements[inserted].reject_if_not_match = !has_roll;
+        syntax_elements[inserted].apply_if_match = true;
     }
 }
 
@@ -21,91 +65,64 @@ bool Searcher::process(
     const size_t chunk_position_in_file,
     Line& line)
 {
-    if (!_pattern)
+    if (!_syntax)
     {
         return false;
     }
 
-    _line_status = LineStatus::unknown;
-
-    char const* const pattern = reinterpret_cast<char const*>(_pattern.get());
-
-    const auto skip_asterisks = [this, pattern]() {
-        while ('*' == pattern[_pattern_current_index])
-        {
-            _has_roll = true;
-            ++_pattern_current_index;
-            _pattern_roll_index = _pattern_current_index;
-        }
-    };
-
-    skip_asterisks();
+    const auto syntax_elements = reinterpret_cast<SyntaxElement const*>(_syntax.get());
 
     for (auto i = start_from_index; i < past_the_end_index; ++i)
     {
         const char ch = chunk[i];
 
-        if (LineStatus::unknown == _line_status && '\0' == pattern[_pattern_current_index])
+        if ('\x0d' == ch)
         {
-            _line_status = LineStatus::suitable;
+            // skip
         }
-
-        switch (ch)
+        else
         {
-            case '\x0d':
+            if (!_rejected)
             {
-                break;
-            }
-            case '\x0a':
-            {
-                _line.past_the_end = chunk_position_in_file + i + 1;
-                if (LineStatus::suitable == _line_status)
+                const auto& syntax_element = syntax_elements[_syntax_index];
+
+                if (syntax_element.ch == ch || syntax_element.ch == '?')
                 {
-                    line = _line;
-                }
-                _line.start_from = _line.past_the_end;
-
-                _pattern_current_index = 0;
-                _has_roll = false;
-                _pattern_roll_index = 0;
-
-                if (LineStatus::suitable == _line_status)
-                {
-                    return true;
-                }
-
-                skip_asterisks();
-
-                _line_status = LineStatus::unknown;
-            }
-            default:
-            {
-                if (LineStatus::unknown == _line_status)
-                {
-                    const char ch_pattern = pattern[_pattern_current_index];
-
-                    if (ch_pattern)
+                    if (syntax_element.apply_if_match)
                     {
-                        if (ch_pattern == ch || ch_pattern == '?')
-                        {
-                            ++_pattern_current_index;
+                        line.start_from = _line_start;
+                        line.past_the_end = chunk_position_in_file + i + 1;
+                        _line_start = line.past_the_end;
 
-                            skip_asterisks();
-                        }
-                        else
-                        {
-                            if (_has_roll)
-                            {
-                                _pattern_current_index = _pattern_roll_index;
-                            }
-                            else
-                            {
-                                _line_status = LineStatus::non_suitable;
-                            }
-                        }
+                        _syntax_index = 0;
+                        _rejected = false;
+
+                        return true;
+                    }
+                    else
+                    {
+                        ++_syntax_index;
+                    }
+                }
+                else
+                {
+                    if (syntax_element.reject_if_not_match)
+                    {
+                        _rejected = true;
+                    }
+                    else
+                    {
+                        _syntax_index = syntax_element.index_roll_if_not_match;
                     }
                 }
             }
+        }
+
+        if ('\x0a' == ch)
+        {
+            _syntax_index = 0;
+            _line_start = chunk_position_in_file + i + 1;
+            _rejected = false;
         }
     }
 
@@ -114,5 +131,5 @@ bool Searcher::process(
 
 Searcher::operator bool() const
 {
-    return _pattern;
+    return _syntax;
 }

@@ -31,20 +31,17 @@ public:
     operator bool() const;
 
 private:
-    enum class LineStatus
+    struct SyntaxElement
     {
-        unknown,
-        suitable,
-        non_suitable,
+        char ch;
+        size_t index_roll_if_not_match;
+        bool reject_if_not_match;
+        bool apply_if_match;
     };
 
 private:
-    size_t _length;
-    Memory _pattern;
-
-    Line _line;
-    size_t _pattern_current_index;
-    bool _has_roll;
-    size_t _pattern_roll_index;
-    LineStatus _line_status;
+    Memory _syntax;
+    size_t _syntax_index;
+    ULONG64 _line_start;
+    bool _rejected;
 };

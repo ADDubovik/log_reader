@@ -1,6 +1,10 @@
 #include <Windows.h>
 
+#include <iostream>
+
 #include "handle_guarded.h"
+
+#include "searcher.h"
 
 #include "log_reader.h"
 
@@ -58,6 +62,42 @@ public:
 
 int main(int argc, char* argv[])
 {
+    {
+        {
+            Searcher searcher;
+            std::cout
+                << std::boolalpha << searcher << std::endl;
+        }
+        Searcher searcher;
+        searcher = Searcher("abc*");
+
+        const auto chunk = "abgc\nlksadhgklfabpweuf\nityier3abcyrfdwueiacs\nlkqwhfutreiqwjd453\nabcfde\nabgc\nabchiuh\n";
+        const auto str_length = strlen(chunk);
+        const auto file_offset = 1000;
+        Searcher::Line line;
+        bool process_result = false;
+        size_t offset = 0;
+
+        do
+        {
+            process_result = searcher.process(
+                chunk,
+                offset,
+                str_length,
+                file_offset,
+                line
+            );
+
+            std::cout
+                << std::boolalpha << process_result << " " << line.start_from << " " << line.past_the_end << std::endl;
+
+            offset = line.past_the_end - file_offset;
+        }
+        while (process_result);
+
+        return 0;
+    }
+
     Console console;
 
     if (argc != 3)
