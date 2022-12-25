@@ -17,6 +17,11 @@ public:
         return _pointer;
     }
 
+    operator bool() const
+    {
+        return _pointer != nullptr;
+    }
+
 private:
     void* _pointer;
 };

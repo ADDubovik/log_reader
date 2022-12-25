@@ -1,6 +1,7 @@
 #include <Windows.h>
 
 #include "handle_guarded.h"
+#include "memory.h"
 
 #include "c_log_reader.h"
 
@@ -19,6 +20,7 @@ public:
 
 private:
     HandleGuarded _handle;
+    Memory _filter;
 };
 
 CLogReader::Impl::Impl()
@@ -52,7 +54,18 @@ void CLogReader::Impl::Close()
 
 bool CLogReader::Impl::SetFilter(const char* filter)
 {
-    return false;
+    const auto str_length = strlen(filter);
+
+    _filter = Memory(str_length + 1);
+
+    if (!_filter)
+    {
+        return false;
+    }
+
+    memcpy(_filter, filter, str_length + 1);
+
+    return true;
 }
 
 bool CLogReader::Impl::GetLineNext(char* buf, const int bufsize)
