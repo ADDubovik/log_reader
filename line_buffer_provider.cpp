@@ -31,7 +31,6 @@ private:
     Searcher _searcher;
 
     size_t _buf_index = c_buf_size;
-    size_t _line_start_index_in_buffer = c_buf_size;
     char _buf[c_buf_size];
 
 };
@@ -80,23 +79,12 @@ bool LineBufferProvider::Impl::GetLineNext(LineBuffer& line_buffer)
     {
         if (_buf_index >= c_buf_size)
         {
-            const auto size = _buf_index - _line_start_index_in_buffer;
-
-            if (size)
-            {
-                if (false == line_buffer.Append(&_buf[_line_start_index_in_buffer], size))
-                {
-                    return false;
-                }
-            }
-
             if (false == ReadBuffer())
             {
                 return false;
             }
 
             _buf_index = 0;
-            _line_start_index_in_buffer = 0;
         }
 
         const auto ch = _buf[_buf_index];
@@ -108,6 +96,11 @@ bool LineBufferProvider::Impl::GetLineNext(LineBuffer& line_buffer)
         {
         case Searcher::SymbolMeaning::Usual:
         {
+            if (false == line_buffer.Append(ch))
+            {
+                return false;
+            }
+
             break;
         }
         case Searcher::SymbolMeaning::Error:
@@ -116,23 +109,15 @@ bool LineBufferProvider::Impl::GetLineNext(LineBuffer& line_buffer)
         }
         case Searcher::SymbolMeaning::LineEndSuitable:
         {
-            const auto size = _buf_index - _line_start_index_in_buffer;
-
-            if (size)
+            if (false == line_buffer.Append(ch))
             {
-                if (false == line_buffer.Append(&_buf[_line_start_index_in_buffer], size))
-                {
-                    return false;
-                }
-
-                return true;
+                return false;
             }
 
-            break;
+            return true;
         }
         case Searcher::SymbolMeaning::LineEndNonSuitable:
         {
-            _line_start_index_in_buffer = _buf_index;
             line_buffer.Clear();
             break;
         }

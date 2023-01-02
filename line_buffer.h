@@ -7,9 +7,13 @@ class LineBuffer
 public:
 	LineBuffer();
 
-	bool Append(
-		char const* const data,
-		const size_t size);
+	LineBuffer(LineBuffer&&) noexcept = default;
+	LineBuffer(const LineBuffer&) = delete;
+
+	LineBuffer& operator=(LineBuffer&&) noexcept = default;
+	LineBuffer& operator=(const LineBuffer&) noexcept = delete;
+
+	bool Append(const char ch);
 
 	void Clear();
 

@@ -15,24 +15,18 @@ LineBuffer::LineBuffer()
 {
 }
 
-bool LineBuffer::Append(
-	char const* const data,
-	const size_t size)
+bool LineBuffer::Append(const char ch)
 {
-	if (!data || !size || !_buffer)
+	if (!_buffer)
 	{
 		return false;
 	}
 
-	if (_size + size > _capacity)
+	if (_size >= _capacity)
 	{
-		const auto size_needed = _size + size;
-		const auto size_multiplied = size + (size >> 1);
-		const auto size_new = size_needed < size_multiplied
-			? size_multiplied
-			: size_needed;
+		const auto capacity_new = _capacity + (_capacity >> 1);
 
-		Memory enlarged(size_new);
+		Memory enlarged(capacity_new);
 
 		if (!enlarged)
 		{
@@ -42,11 +36,11 @@ bool LineBuffer::Append(
 		memcpy(enlarged, _buffer, _size);
 
 		_buffer = static_cast<Memory&&>(enlarged);
-		_capacity = size_new;
+		_capacity = capacity_new;
 	}
 
-	memcpy(static_cast<char*>(_buffer.get()) + _size, data, size);
-	_size += size;
+	static_cast<char*>(_buffer.get())[_size] = ch;
+	++_size;
 
 	return true;
 }

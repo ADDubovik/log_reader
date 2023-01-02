@@ -3,6 +3,7 @@
 #include "handle_guarded.h"
 #include "memory.h"
 #include "searcher.h"
+#include "line_buffer.h"
 
 #include "log_reader.h"
 
@@ -27,11 +28,15 @@ public:
 private:
     bool ReadBuffer();
 
+    bool MakeLineBufferWithSuitableLine();
+
 private:
     HandleGuarded _file;
     Searcher _searcher;
+    LineBuffer _line_buffer;
 
-    size_t _buf_search_index = 0;
+    size_t _buf_index = buf_size;
+    size_t _line_start_index_in_buffer = buf_size;
     size_t _buf_past_the_end_index = 0;
     size_t _buf_position_in_file = 0;
     size_t _read_from_file_total = 0;
@@ -73,40 +78,12 @@ bool CLogReader::Impl::SetFilter(const char* filter)
 
 bool CLogReader::Impl::GetLineNext(char* buf, const int bufsize)
 {
-    if (!_searcher || !_file)
+    if (!_searcher || !_file || !_line_buffer  || !buf || !bufsize)
     {
         return false;
     }
 
-    do
-    {
-        if (_buf_search_index == _buf_past_the_end_index)
-        {
-            if (!ReadBuffer())
-            {
-                return false;
-            }
-        }
-
-        Searcher::Line line;
-        if (_searcher.process(
-            &_buf[0],
-            _buf_search_index,
-            _buf_past_the_end_index,
-            _buf_position_in_file,
-            line))
-        {
-            _buf_search_index = line.past_the_end;
-            // TODO
-            return true;
-        }
-        else
-        {
-            _buf_search_index = 0;
-        }
-    } while (true);
-
-    return false;
+    return true;
 }
 
 bool CLogReader::Impl::ReadBuffer()
@@ -124,7 +101,7 @@ bool CLogReader::Impl::ReadBuffer()
         NULL         // [in, out, optional] LPOVERLAPPED lpOverlapped
     );
 
-    if (!read_result || 0 == bytes_read)
+    if (false == read_result || 0 == bytes_read)
     {
         return false;
     }
