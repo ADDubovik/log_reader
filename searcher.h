@@ -31,13 +31,6 @@ public:
         ULONG64 past_the_end = 0;
     };
 
-    bool process(
-        char const* const chunk,
-        const size_t start_from_index,
-        const size_t past_the_end_index,
-        const size_t chunk_position_in_file,
-        Line& line);
-
     operator bool() const;
 
 private:
@@ -46,7 +39,6 @@ private:
         char ch;
         size_t index_roll_if_not_match;
         bool reject_if_not_match;
-        bool apply_if_match;
     };
 
 private:
