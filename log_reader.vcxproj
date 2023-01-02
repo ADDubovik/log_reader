@@ -128,6 +128,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="line_buffer.cpp" />
+    <ClCompile Include="line_buffer_provider.cpp" />
     <ClCompile Include="log_reader.cpp" />
     <ClCompile Include="example.cpp" />
     <ClCompile Include="handle_guarded.cpp" />
@@ -136,6 +137,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="line_buffer.h" />
+    <ClInclude Include="line_buffer_provider.h" />
     <ClInclude Include="log_reader.h" />
     <ClInclude Include="handle_guarded.h" />
     <ClInclude Include="memory.h" />
