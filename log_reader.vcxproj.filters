@@ -30,6 +30,9 @@
     <ClCompile Include="searcher.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="line_buffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="log_reader.h">
@@ -42,6 +45,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="searcher.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="line_buffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
