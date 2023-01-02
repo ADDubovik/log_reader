@@ -15,6 +15,20 @@ namespace
     const int cannot_open_file_exit_code = 3;
 
     constexpr size_t buf_size = 32;
+
+    template<size_t N>
+    size_t line_length(const char (&buf)[N])
+    {
+        for (size_t i = 0; i < N; ++i)
+        {
+            if ('\x0a' == buf[i])
+            {
+                return i + 1;
+            }
+        }
+
+        return N;
+    }
 } // namespace
 
 class Console : public HandleGuarded
@@ -62,41 +76,41 @@ public:
 
 int main(int argc, char* argv[])
 {
-    {
-        {
-            Searcher searcher;
-            std::cout
-                << std::boolalpha << searcher << std::endl;
-        }
-        Searcher searcher;
-        searcher = Searcher("*abc*");
-
-        const auto chunk = "abgc\nlksadhgklfabpweuf\nityier3abcyrfdwueiacs\nlkqwhfutreiqwjd453\nabcfde\nabgc\nabchiuh\n";
-        const auto str_length = strlen(chunk);
-        const auto file_offset = 1000;
-
-        Searcher::Line line;
-        size_t start_from_index = 0;
-
-        do
-        {
-            const bool process_result = searcher.process(
-                chunk,
-                start_from_index,
-                str_length,
-                file_offset,
-                line
-            );
-
-            std::cout
-                << std::boolalpha << process_result << " " << line.start_from << " " << line.past_the_end << std::endl;
-
-            start_from_index = line.past_the_end - file_offset;
-        }
-        while (start_from_index != str_length);
-
-        return 0;
-    }
+    //{
+    //    {
+    //        Searcher searcher;
+    //        std::cout
+    //            << std::boolalpha << searcher << std::endl;
+    //    }
+    //    Searcher searcher;
+    //    searcher = Searcher("*abc*");
+    //
+    //    const auto chunk = "abgc\nlksadhgklfabpweuf\nityier3abcyrfdwueiacs\nlkqwhfutreiqwjd453\nabcfde\nabgc\nabchiuh\n";
+    //    const auto str_length = strlen(chunk);
+    //    const auto file_offset = 1000;
+    //
+    //    Searcher::Line line;
+    //    size_t start_from_index = 0;
+    //
+    //    do
+    //    {
+    //        const bool process_result = searcher.process(
+    //            chunk,
+    //            start_from_index,
+    //            str_length,
+    //            file_offset,
+    //            line
+    //        );
+    //
+    //        std::cout
+    //            << std::boolalpha << process_result << " " << line.start_from << " " << line.past_the_end << std::endl;
+    //
+    //        start_from_index = line.past_the_end - file_offset;
+    //    }
+    //    while (start_from_index != str_length);
+    //
+    //    return 0;
+    //}
 
     Console console;
 
@@ -143,19 +157,22 @@ int main(int argc, char* argv[])
     char buf[buf_size];
     while (log_reader.GetLineNext(&buf[0], buf_size))
     {
-        const auto buf_length = strlen(&buf[0]);
+        const auto line_length = ::line_length(buf);
+        const auto bytes_to_write = line_length < buf_size
+            ? line_length
+            : buf_size;
 
         DWORD bytes_written;
 
         WriteFile(
             out_file,                               // [in]                HANDLE       hFile,
             &buf[0],                                // [in]                LPCVOID      lpBuffer,
-            static_cast<DWORD>(buf_length),         // [in]                DWORD        nNumberOfBytesToWrite,
+            static_cast<DWORD>(bytes_to_write),     // [in]                DWORD        nNumberOfBytesToWrite,
             &bytes_written,                         // [out, optional]     LPDWORD      lpNumberOfBytesWritten,
             NULL                                    // [in, out, optional] LPOVERLAPPED lpOverlapped
         );
 
-        if (buf_length != bytes_written)
+        if (bytes_to_write != bytes_written)
         {
             console.print_multi("Can't write file\n");
 
