@@ -70,3 +70,8 @@ char const* const LineBuffer::Data() const
 {
 	return static_cast<char const*>(_buffer.get());
 }
+
+LineBuffer::operator bool() const
+{
+	return _buffer;
+}

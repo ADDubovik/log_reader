@@ -17,6 +17,8 @@ public:
 	size_t Size() const;
 	char const* const Data() const;
 
+	operator bool() const;
+
 private:
 	Memory _buffer;
 	size_t _size;
