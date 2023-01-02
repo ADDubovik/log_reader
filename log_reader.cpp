@@ -55,7 +55,7 @@ bool CLogReader::Impl::GetLineNext(char* buf, const int bufsize)
         return false;
     }
 
-    if (_line_buffer.Size() == _line_buffer_position)
+    if (_line_buffer.Size() <= _line_buffer_position)
     {
         _line_buffer.Clear();
 
@@ -72,7 +72,7 @@ bool CLogReader::Impl::GetLineNext(char* buf, const int bufsize)
         ? line_buffer_size
         : bufsize;
 
-    memcpy(buf, _line_buffer.Data(), size_to_copy);
+    memcpy(buf, _line_buffer.Data() + _line_buffer_position, size_to_copy);
 
     _line_buffer_position += size_to_copy;
 
