@@ -15,6 +15,16 @@ public:
     Searcher& operator=(Searcher&&) = default;
     Searcher& operator=(const Searcher&) = delete;
 
+    enum class SymbolMeaning
+    {
+        Usual,
+        Error,
+        LineEndSuitable,
+        LineEndNonSuitable,
+    };
+
+    SymbolMeaning ProcessNextChar(const char ch);
+
     struct Line
     {
         ULONG64 start_from = 0;

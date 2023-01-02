@@ -58,6 +58,55 @@ Searcher::Searcher(char const* pattern)
     }
 }
 
+Searcher::SymbolMeaning Searcher::ProcessNextChar(const char ch)
+{
+    if (!_syntax)
+    {
+        return SymbolMeaning::Error;
+    }
+
+    if ('\x0d' == ch)
+    {
+        return SymbolMeaning::Usual;
+    }
+
+    const auto syntax_elements = reinterpret_cast<SyntaxElement const*>(_syntax.get());
+
+    const auto& syntax_element = syntax_elements[_syntax_index];
+
+    if (syntax_element.ch == ch || syntax_element.ch == '?')
+    {
+        if (syntax_element.apply_if_match)
+        {
+            const auto result = _rejected
+                ? SymbolMeaning::LineEndNonSuitable
+                : SymbolMeaning::LineEndSuitable;
+
+            _syntax_index = 0;
+            _rejected = false;
+
+            return result;
+        }
+        else
+        {
+            ++_syntax_index;
+        }
+    }
+    else
+    {
+        if (syntax_element.reject_if_not_match)
+        {
+            _rejected = true;
+        }
+        else
+        {
+            _syntax_index = syntax_element.index_roll_if_not_match;
+        }
+    }
+
+    return SymbolMeaning::Usual;
+}
+
 bool Searcher::process(
     char const* const chunk,
     const size_t start_from_index,
